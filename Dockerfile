@@ -243,6 +243,8 @@ USER node
 #   - aliases: /health and /ready
 HEALTHCHECK --interval=3m --timeout=10s --start-period=15s --retries=3 \
   CMD node -e "const p=process.env.PORT||18789;fetch('http://127.0.0.1:'+p+'/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-# Apply default heap limit only when NODE_OPTIONS is not already set by the
-# user or hosting platform, so explicit overrides are respected.
-CMD ["sh", "-c", "exec node ${NODE_OPTIONS:---max-old-space-size=${OPENCLAW_DEFAULT_MAX_OLD_SPACE_SIZE:-768}} openclaw.mjs gateway --bind lan --allow-unconfigured"]
+# Apply default heap limit.  If the user/platform already set
+# --max-old-space-size in NODE_OPTIONS we respect it; otherwise we append
+# our default so Node does not auto-detect a too-small limit on low-memory
+# PaaS containers (Railway, Render, Fly).
+CMD ["sh", "-c", "case \"${NODE_OPTIONS:-}\" in *--max-old-space-size*) ;; *) export NODE_OPTIONS=\"${NODE_OPTIONS:-} --max-old-space-size=${OPENCLAW_DEFAULT_MAX_OLD_SPACE_SIZE:-768}\";; esac && exec node ${NODE_OPTIONS} openclaw.mjs gateway --bind lan --allow-unconfigured"]
