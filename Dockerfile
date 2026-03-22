@@ -222,6 +222,16 @@ RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw \
 
 ENV NODE_ENV=production
 
+# PaaS gateway config: allow host-header origin fallback for the Control UI
+# since Railway/Render/Fly proxy traffic through their own domains.
+# Write config and explicitly set OPENCLAW_CONFIG_PATH so the gateway finds it
+# regardless of HOME resolution.
+RUN mkdir -p /app/.openclaw && \
+    printf '{"gateway":{"controlUi":{"dangerouslyAllowHostHeaderOriginFallback":true}}}\n' \
+      > /app/.openclaw/openclaw.json && \
+    chown -R node:node /app/.openclaw
+ENV OPENCLAW_CONFIG_PATH=/app/.openclaw/openclaw.json
+
 # Security hardening: Run as non-root user
 # The node:24-bookworm image includes a 'node' user (uid 1000)
 # This reduces the attack surface by preventing container escape via root privileges
