@@ -20,6 +20,7 @@ Key differences from upstream:
 - `--bind lan` (upstream uses loopback — Railway needs 0.0.0.0)
 - `--port ${PORT:-18789}` (upstream hardcodes or omits — Railway assigns PORT)
 - Healthcheck reads `process.env.PORT` (upstream hardcodes 18789)
+- PaaS gateway config block before `USER node` that writes `/app/.openclaw/openclaw.json` with `dangerouslyAllowHostHeaderOriginFallback` and `dangerouslyDisableDeviceAuth` — without this the gateway crashes on non-loopback bind
 
 ## Syncing from upstream
 
@@ -27,4 +28,6 @@ Key differences from upstream:
 2. Resolve conflicts by accepting upstream — unless it's a file you intentionally changed for Railway
 3. **Check the Dockerfile** for `--mount=type=cache` lines and remove them (Railway rejects these)
 4. **Check the Dockerfile CMD and HEALTHCHECK** — restore `--bind lan` and PORT handling if upstream overwrote them
+5. **Check the PaaS gateway config block** — ensure the `openclaw.json` write with `dangerouslyAllowHostHeaderOriginFallback` exists before `USER node`
+6. The `railway-compat.yml` GitHub Action should auto-fix all of the above, but verify
 5. Push main, Railway rebuilds automatically

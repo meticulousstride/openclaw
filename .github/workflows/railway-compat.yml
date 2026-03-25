@@ -22,6 +22,22 @@ jobs:
             echo "Stripped BuildKit cache mounts"
           fi
 
+      - name: Ensure PaaS gateway config exists
+        run: |
+          if ! grep -q 'dangerouslyAllowHostHeaderOriginFallback' Dockerfile; then
+            # Insert the config block before USER node
+            sed -i '/^USER node$/i \
+# PaaS gateway config: allow host-header origin fallback for the Control UI\
+# since Railway\/Render\/Fly proxy traffic through their own domains.\
+RUN mkdir -p \/app\/.openclaw \&\& \\\
+    printf '"'"'{"gateway":{"controlUi":{"dangerouslyAllowHostHeaderOriginFallback":true,"dangerouslyDisableDeviceAuth":true}}}\\n'"'"' \\\
+      > \/app\/.openclaw\/openclaw.json \&\& \\\
+    chown -R node:node \/app\/.openclaw\
+ENV OPENCLAW_CONFIG_PATH=\/app\/.openclaw\/openclaw.json\
+' Dockerfile
+            echo "Restored PaaS gateway config"
+          fi
+
       - name: Ensure Railway-compatible CMD and HEALTHCHECK
         run: |
           # Replace HEALTHCHECK to use PORT env var
